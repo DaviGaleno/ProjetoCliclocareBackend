@@ -1,0 +1,36 @@
+package com.ciclocare.dto.request;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDate;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CicloMenstrualRequest {
+
+    @NotNull(message = "Data de início é obrigatória")
+    private LocalDate dataInicio;
+
+    @NotNull(message = "Data de término é obrigatória")
+    private LocalDate dataFim;
+
+    @NotNull(message = "Duração do ciclo é obrigatória")
+    @Min(value = 20, message = "Duração do ciclo deve ser mínimo 20 dias")
+    private Integer duracaoCiclo;
+
+    @NotNull(message = "Duração da menstruação é obrigatória")
+    @Min(value = 1, message = "Duração da menstruação deve ser mínimo 1 dia")
+    private Integer duracaoMenstruacao;
+
+    @NotNull(message = "Última menstruação é obrigatória")
+    private LocalDate ultimaMenstruacao;
+
+    private String intensidadeFluxo;
+}
