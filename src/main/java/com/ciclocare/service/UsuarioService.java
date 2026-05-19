@@ -1,5 +1,6 @@
 package com.ciclocare.service;
 
+import com.ciclocare.dto.request.CicloMenstrualRequest;
 import com.ciclocare.dto.request.RegisterRequest;
 import com.ciclocare.dto.request.UpdateProfileRequest;
 import com.ciclocare.dto.response.UsuarioResponse;
@@ -22,6 +23,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+	private final CicloMenstrualService cicloMenstrualService;
 
     @Transactional
     public UsuarioResponse registrar(RegisterRequest request) {
@@ -38,23 +40,26 @@ public class UsuarioService {
                 .senha(passwordEncoder.encode(request.getSenha()))
                 .ativo(true)
                 .build();
+		Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
-		LocalDate dataInicio = request.getUltimaMenstruacao();
-		LocalDate dataFim = dataInicio.plusDays(request.getDuracaoMenstruacao() - 1);
-		LocalDate proximaPrevisao = dataInicio.plusDays(request.getDuracaoCiclo());
+		// Criar primeiro ciclo
+		var dadosCiclo = request.getDadosCiclo();
 
-		CicloMenstrual ciclo = CicloMenstrual.builder()
-				.usuario(usuario)
-				.dataInicio(dataInicio)
-				.dataFim(dataFim)
-				.proximaPrevisao(proximaPrevisao)
-				.ultimaMenstruacao(request.getUltimaMenstruacao())
-				.duracaoCiclo(request.getDuracaoCiclo())
-				.duracaoMenstruacao(request.getDuracaoMenstruacao())
+		LocalDate dataInicio = request.getDadosCiclo().getDataInicio();
+		LocalDate dataFim = dataInicio.plusDays(request.getDadosCiclo().getDuracaoMenstruacao() - 1);
+		LocalDate proximaPrevisao = dataInicio.plusDays(request.getDadosCiclo().getDuracaoCiclo());
+
+		CicloMenstrualRequest cicloMenstrualRequest = CicloMenstrualRequest.builder()
+				.dataInicio(request.getDadosCiclo().getDataInicio())
+				.dataFim(request.getDadosCiclo().getDataFim())
+				.ultimaMenstruacao(request.getDadosCiclo().getUltimaMenstruacao())
+				.duracaoCiclo(request.getDadosCiclo().getDuracaoCiclo())
+				.duracaoMenstruacao(request.getDadosCiclo().getDuracaoMenstruacao())
+				.proximaPrevisao(request.getDadosCiclo().getProximaPrevisao())
+				.intensidadeFluxo(request.getDadosCiclo().getIntensidadeFluxo())
 				.build();
 
-		usuario.getCiclosMenstruais().add(ciclo);
-		Usuario usuarioSalvo = usuarioRepository.save(usuario);
+		cicloMenstrualService.criar(usuario.getId(), cicloMenstrualRequest);
         return mapToResponse(usuarioSalvo);
     }
 
