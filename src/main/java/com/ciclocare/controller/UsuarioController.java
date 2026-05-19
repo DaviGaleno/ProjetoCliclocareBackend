@@ -1,7 +1,11 @@
 package com.ciclocare.controller;
 
+import com.ciclocare.dto.request.RegisterRequest;
 import com.ciclocare.dto.request.UpdateProfileRequest;
 import com.ciclocare.dto.response.ApiResponse;
+import com.ciclocare.dto.response.DashboardCicloResponse;
+import com.ciclocare.entity.Usuario;
+import com.ciclocare.service.CicloMenstrualService;
 import com.ciclocare.service.UsuarioService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,7 @@ import java.util.UUID;
 public class UsuarioController {
 
     private final UsuarioService usuarioService;
+	private final CicloMenstrualService cicloMenstrualService;
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse> buscarPorId(@PathVariable UUID id) {
@@ -71,4 +76,10 @@ public class UsuarioController {
                     .body(ApiResponse.erro(e.getMessage()));
         }
     }
+
+	@GetMapping("/{id}/dashboard")
+	public DashboardCicloResponse exibirDashboard(
+			@PathVariable UUID id
+	) { return cicloMenstrualService.exibirDashboard(id); }
+
 }
