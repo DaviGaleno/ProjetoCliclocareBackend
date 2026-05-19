@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -33,4 +34,5 @@ public class CicloMenstrualRequest {
     private LocalDate ultimaMenstruacao;
 
     private String intensidadeFluxo;
+
 }
