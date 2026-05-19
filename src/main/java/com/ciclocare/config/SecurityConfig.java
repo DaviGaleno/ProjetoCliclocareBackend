@@ -38,8 +38,8 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.requestMatchers("/usuarios/**").permitAll()
-                        .anyRequest().authenticated()
+						.requestMatchers("/auth/**").permitAll()
+						.anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider())

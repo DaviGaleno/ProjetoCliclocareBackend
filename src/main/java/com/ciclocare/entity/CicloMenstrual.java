@@ -39,6 +39,12 @@ public class CicloMenstrual {
     @Column(nullable = false)
     private Integer duracaoMenstruacao = 5;
 
+    @Column(nullable = false)
+    private LocalDate ultimaMenstruacao;
+
+    @Column
+    private LocalDate proximaPrevisao;
+
     @Column
     private String intensidadeFluxo;
 

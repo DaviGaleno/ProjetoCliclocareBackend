@@ -3,6 +3,7 @@ package com.ciclocare.service;
 import com.ciclocare.dto.request.RegisterRequest;
 import com.ciclocare.dto.request.UpdateProfileRequest;
 import com.ciclocare.dto.response.UsuarioResponse;
+import com.ciclocare.entity.CicloMenstrual;
 import com.ciclocare.entity.Usuario;
 import com.ciclocare.exception.ResourceNotFoundException;
 import com.ciclocare.exception.ValidationException;
@@ -12,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -36,7 +38,22 @@ public class UsuarioService {
                 .ativo(true)
                 .build();
 
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+		LocalDate dataInicio = request.getUltimaMenstruacao();
+		LocalDate dataFim = dataInicio.plusDays(request.getDuracaoMenstruacao() - 1);
+		LocalDate proximaPrevisao = dataInicio.plusDays(request.getDuracaoCiclo());
+
+		CicloMenstrual ciclo = CicloMenstrual.builder()
+				.usuario(usuario)
+				.dataInicio(dataInicio)
+				.dataFim(dataFim)
+				.proximaPrevisao(proximaPrevisao)
+				.ultimaMenstruacao(request.getUltimaMenstruacao())
+				.duracaoCiclo(request.getDuracaoCiclo())
+				.duracaoMenstruacao(request.getDuracaoMenstruacao())
+				.build();
+
+		usuario.getCiclosMenstruais().add(ciclo);
+		Usuario usuarioSalvo = usuarioRepository.save(usuario);
         return mapToResponse(usuarioSalvo);
     }
 

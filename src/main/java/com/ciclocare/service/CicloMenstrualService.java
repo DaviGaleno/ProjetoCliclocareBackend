@@ -2,15 +2,20 @@ package com.ciclocare.service;
 
 import com.ciclocare.dto.request.CicloMenstrualRequest;
 import com.ciclocare.dto.response.CicloMenstrualResponse;
+import com.ciclocare.dto.response.DashboardCicloResponse;
+import com.ciclocare.dto.response.UsuarioResponse;
 import com.ciclocare.entity.CicloMenstrual;
 import com.ciclocare.entity.Usuario;
+import com.ciclocare.enums.FaseCiclo;
 import com.ciclocare.exception.ResourceNotFoundException;
 import com.ciclocare.repository.CicloMenstrualRepository;
+import com.ciclocare.repository.UsuarioRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -21,6 +26,7 @@ public class CicloMenstrualService {
 
     private final CicloMenstrualRepository cicloRepository;
     private final UsuarioService usuarioService;
+	private final UsuarioRepository usuarioRepository;
 
     @Transactional
     public CicloMenstrualResponse criar(UUID usuarioId, CicloMenstrualRequest request) {
@@ -33,11 +39,11 @@ public class CicloMenstrualService {
 
         CicloMenstrual ciclo = CicloMenstrual.builder()
                 .usuario(usuario)
-                .dataInicio(request.getDataInicio())
-                .dataFim(request.getDataFim())
-                .duracaoCiclo(request.getDuracaoCiclo())
-                .duracaoMenstruacao(request.getDuracaoMenstruacao())
+                .dataInicio(request.getUltimaMenstruacao())
+                .dataFim(request.getUltimaMenstruacao().plusDays(request.getDuracaoMenstruacao() - 1))
                 .ultimaMenstruacao(request.getUltimaMenstruacao())
+				.duracaoCiclo(request.getDuracaoCiclo())
+				.duracaoMenstruacao(request.getDuracaoMenstruacao())
                 .proximaPrevisao(proximaPrevisao)
                 .intensidadeFluxo(request.getIntensidadeFluxo())
                 .build();
@@ -107,4 +113,79 @@ public class CicloMenstrualService {
                 .criadoEm(ciclo.getCriadoEm())
                 .build();
     }
+
+	public String gerarMensagem(FaseCiclo faseCiclo) {
+		return switch(faseCiclo) {
+			case MENSTRUAL -> "Seu corpo está em fase de renovação.";
+			case FOLICULAR -> "Mais energia e disposição hoje.";
+			case OVULACAO -> "Alta fertilidade no momento.";
+			case LUTEA -> "Momento ideal para desacelerar.";
+		};
+	}
+
+	public DashboardCicloResponse exibirDashboard(UUID idUsuaria) {
+		Usuario usuaria = usuarioRepository.findById(idUsuaria)
+				.orElseThrow(() ->
+						new ResourceNotFoundException("Usuária não encontrada."));
+
+		CicloMenstrual cicloAtual =
+				cicloRepository.findByUsuarioOrderByDataInicioDesc(usuaria)
+						.orElseThrow(() ->
+								new ResourceNotFoundException("Nenhum ciclo encontrado."));
+
+		Integer diaCiclo = calcularDiaCiclo(
+				cicloAtual.getUltimaMenstruacao(),
+				cicloAtual.getDuracaoCiclo());
+
+		FaseCiclo faseCiclo = calcularFaseAtual(
+				diaCiclo,
+				cicloAtual.getDuracaoCiclo(),
+				cicloAtual.getDuracaoMenstruacao()
+		);
+
+		return DashboardCicloResponse.builder()
+				.diaCiclo(diaCiclo)
+				.faseCiclo(faseCiclo)
+				.mensagem(gerarMensagem(faseCiclo))
+				.ultimaMenstruacao(
+						cicloAtual.getUltimaMenstruacao()
+				)
+				.duracaoCiclo(
+						cicloAtual.getDuracaoCiclo()
+				)
+				.duracaoMenstruacao(
+						cicloAtual.getDuracaoMenstruacao()
+				)
+				.build();
+	}
+
+	public FaseCiclo calcularFaseAtual(
+			Integer diaCiclo,
+			Integer duracaoCiclo,
+			Integer duracaoMenstruacao) {
+		if (diaCiclo <= duracaoMenstruacao) {
+			return FaseCiclo.MENSTRUAL;
+		}
+
+		int ovulacao = duracaoCiclo - 14;
+
+		if (diaCiclo < ovulacao) {
+			return FaseCiclo.FOLICULAR;
+		}
+
+		if (diaCiclo == ovulacao) {
+			return FaseCiclo.OVULACAO;
+		}
+
+		return FaseCiclo.LUTEA;
+	}
+
+	public Integer calcularDiaCiclo(LocalDate ultimaMenstruacao, Integer duracaoCiclo) {
+		Long dias = ChronoUnit.DAYS.between(
+				ultimaMenstruacao,
+				LocalDate.now()
+		);
+
+		return (int) (dias % duracaoCiclo) + 1;
+	}
 }
